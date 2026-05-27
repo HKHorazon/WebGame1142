@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>小遊戲選單</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    font-family: "Arial", "Noto Sans TC", sans-serif;
+    background: radial-gradient(circle at 30% 20%, #f5f2e8, #ddd8cc);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* 水墨紋理 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -50px;
+    background: url("https://upload.wikimedia.org/wikipedia/commons/3/3f/Ink_wash_painting_texture.jpg") center / cover;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 點陣紋 */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(#00000012 1px, transparent 1px);
+    background-size: 6px 6px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: #2c2416;
+    text-shadow: 2px 2px 0 #b8a98844;
+  }
+
+  header p {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #7a6e5f;
+    letter-spacing: 0.08em;
+  }
+
+  /* 裝飾線 */
+  header .divider {
+    margin: 14px auto 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #9a8060, transparent);
+    border-radius: 2px;
+  }
+
+  .game-list {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .game-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: rgba(255, 252, 244, 0.82);
+    border: 1.5px solid #c8bfaa;
+    border-radius: 16px;
+    padding: 20px 22px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 18px #00000014, inset 0 1px 0 #ffffff88;
+    backdrop-filter: blur(4px);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .game-card:active {
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px #00000018;
+  }
+
+  .game-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+    flex-shrink: 0;
+    width: 52px;
+    text-align: center;
+    filter: drop-shadow(0 2px 4px #0000002a);
+  }
+
+  .game-info { flex: 1; }
+
+  .game-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #2c2416;
+    letter-spacing: 0.05em;
+  }
+
+  .game-desc {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: #7a6e5f;
+    line-height: 1.5;
+  }
+
+  .game-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .tag-ink    { background: #e8e0d0; color: #6b5c3e; border: 1px solid #c9baa0; }
+  .tag-card   { background: #e4edd8; color: #4a6b3a; border: 1px solid #b5cc9a; }
+  .tag-pixel  { background: #1e1e2e; color: #a0f0a0; border: 1px solid #3a5a3a; }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    margin-top: 52px;
+    font-size: 0.72rem;
+    color: #a09080;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎮 小遊戲選單</h1>
+  <p>選擇你的遊戲，開始挑戰！</p>
+  <div class="divider"></div>
+</header>
+
+<div class="game-list">
+
+  <a class="game-card" href="2048.html">
+    <div class="game-icon">🀄</div>
+    <div class="game-info">
+      <div class="game-name">2048 水墨風</div>
+      <div class="game-desc">滑動方塊，合併數字，挑戰 2048！</div>
+    </div>
+    <span class="game-tag tag-ink">水墨</span>
+  </a>
+
+  <a class="game-card" href="Card.html">
+    <div class="game-icon">🃏</div>
+    <div class="game-info">
+      <div class="game-name">記憶翻牌</div>
+      <div class="game-desc">翻開配對相同的卡牌，訓練你的記憶力！</div>
+    </div>
+    <span class="game-tag tag-card">翻牌</span>
+  </a>
+
+  <a class="game-card" href="Snake.html">
+    <div class="game-icon">🐍</div>
+    <div class="game-info">
+      <div class="game-name">Pixel Snake</div>
+      <div class="game-desc">控制像素蛇吃食物，別撞到自己！</div>
+    </div>
+    <span class="game-tag tag-pixel">像素</span>
+  </a>
+
+</div>
+
+<footer>學生自主多元學習專案 · 1142</footer>
+
+</body>
+</html>
