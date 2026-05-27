@@ -6,100 +6,114 @@
 <title>Pixel Snake</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    touch-action:none;
-    font-family:Arial, Helvetica, sans-serif;
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    touch-action: none;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-body{
-    background:#0a0a0f;
-    overflow:hidden;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    color:white;
+/* dvh 適配 iPhone Safari 動態工具列 */
+body {
+    background: #0a0a0f;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    height: 100dvh;
+    color: white;
 }
 
-#gameWrapper{
-    width:min(100vw, 500px);
-    height:100vh;
-    max-height:950px;
-    background:linear-gradient(#101020,#06060d);
-    position:relative;
-    overflow:hidden;
+#gameWrapper {
+    width: 100%;
+    max-width: 500px;
+    height: 100%;
+    background: linear-gradient(#101020, #06060d);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-canvas{
+#topUI {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 17px;
+    color: #00ffd5;
+    text-shadow: 0 0 8px #00ffd5;
+}
+
+#canvasWrap {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+    /* scale down to fit whatever space is left after topUI */
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
     background:
         linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
         #0d0d18;
-    background-size:24px 24px;
-    display:block;
-    margin:auto;
-    image-rendering: pixelated;
-    border-bottom:2px solid #00ffd5;
+    background-size: 24px 24px;
+    border: 1px solid #00ffd533;
 }
 
-#topUI{
-    padding:12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:18px;
-    color:#00ffd5;
-    text-shadow:0 0 8px #00ffd5;
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 10;
+    padding: 30px;
 }
 
-
-.overlay{
-    position:absolute;
-    inset:0;
-    background:rgba(0,0,0,0.85);
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    z-index:10;
-    padding:30px;
+.overlay h1 {
+    font-size: 38px;
+    color: #00ffd5;
+    text-shadow: 0 0 12px #00ffd5;
+    margin-bottom: 20px;
 }
 
-.overlay h1{
-    font-size:42px;
-    color:#00ffd5;
-    text-shadow:0 0 12px #00ffd5;
-    margin-bottom:20px;
+.overlay p {
+    opacity: 0.9;
+    margin-bottom: 18px;
+    line-height: 1.7;
+    font-size: 15px;
 }
 
-.overlay p{
-    opacity:0.9;
-    margin-bottom:18px;
-    line-height:1.6;
+.mainBtn {
+    border: none;
+    padding: 16px 28px;
+    border-radius: 16px;
+    background: #00ffd5;
+    color: #001010;
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 10px;
+    cursor: pointer;
 }
 
-.mainBtn{
-    border:none;
-    padding:16px 28px;
-    border-radius:16px;
-    background:#00ffd5;
-    color:#001010;
-    font-size:20px;
-    font-weight:bold;
-    margin-top:10px;
-}
+.flash { animation: flash 0.2s; }
 
-.flash{
-    animation:flash 0.2s;
-}
-
-@keyframes flash{
-    0%{ filter:brightness(2); }
-    100%{ filter:brightness(1); }
+@keyframes flash {
+    0%  { filter: brightness(2); }
+    100%{ filter: brightness(1); }
 }
 </style>
 </head>
@@ -112,15 +126,19 @@ canvas{
         <div>最高：<span id="best">0</span></div>
     </div>
 
-    <canvas id="game" width="480" height="720"></canvas>
+    <div id="canvasWrap">
+        <!-- canvas 尺寸由 JS 依螢幕動態設定 -->
+        <canvas id="game"></canvas>
+    </div>
 
     <div class="overlay" id="startScreen">
         <h1>PIXEL SNAKE</h1>
         <p>
             手機：在畫面上滑動來控制<br>
             電腦：WASD 鍵<br><br>
-            吃果實變長<br>
-            撞牆、撞自己、撞障礙物會失敗<br><br>
+            🟦 吃青色果實 +1，加速<br>
+            🟨 吃黃色果實 +3，更快加速<br>
+            🟥 障礙物 — 碰到就結束<br><br>
             長度達到 22 即勝利！
         </p>
         <button class="mainBtn" onclick="startGame()">開始遊戲</button>
@@ -135,288 +153,211 @@ canvas{
 </div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const canvas  = document.getElementById("game");
+const ctx     = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+const bestEl  = document.getElementById("best");
 
-const grid = 24;
-const tile = 20;
+// ── 格子常數 ──────────────────────────────────────
+const COLS = 20;
+const ROWS = 28;
+let   CELL = 24;   // 由 resizeCanvas() 動態算出
 
-let snake;
-let dir;
-let nextDir;
-let food;
-let boostFood;
-let obstacles;
-let score;
-let best;
-let gameLoop;
-let speed;
-let running=false;
+// ── 遊戲狀態 ─────────────────────────────────────
+let snake, dir, nextDir;
+let food, boostFood, obstacles;
+let score, speed, gameLoop;
+let running = false;
 
-const scoreEl=document.getElementById("score");
-const bestEl=document.getElementById("best");
-
-best = Number(localStorage.getItem("snake_best") || 0);
+let best = Number(localStorage.getItem("snake_best") || 0);
 bestEl.textContent = best;
 
-function randomCell(){
-    return {
-        x: Math.floor(Math.random() * tile),
-        y: Math.floor(Math.random() * 28)
-    };
+// ── Canvas 自適應 ────────────────────────────────
+function resizeCanvas() {
+    const wrap = document.getElementById("canvasWrap");
+    const availW = wrap.clientWidth;
+    const availH = wrap.clientHeight;
+
+    // 選最大整數格子大小，讓棋盤完整放入可用空間
+    const cellByW = Math.floor(availW / COLS);
+    const cellByH = Math.floor(availH / ROWS);
+    CELL = Math.max(12, Math.min(cellByW, cellByH)); // 最小 12px 以防太小
+
+    canvas.width  = CELL * COLS;
+    canvas.height = CELL * ROWS;
+
+    // 同步 CSS 背景格線大小
+    canvas.style.backgroundSize = `${CELL}px ${CELL}px`;
 }
 
-function createFood(){
-    food = randomCell();
-}
-
-function createBoostFood(){
-    boostFood = randomCell();
-}
-
-function createObstacles(){
-    obstacles=[];
-    for(let i=0;i<6;i++){
-        obstacles.push(randomCell());
-    }
-}
-
-function resetGame(){
-
-    snake = [
-        {x:10,y:10},
-        {x:9,y:10},
-        {x:8,y:10}
-    ];
-
-    dir = {x:1,y:0};
-    nextDir = dir;
-
-    score=0;
-    speed=150;
-
-    createFood();
-    createBoostFood();
-    createObstacles();
-
-    scoreEl.textContent=score;
-}
-
-function startGame(){
-
-    document.getElementById("startScreen").style.display="none";
-    document.getElementById("endScreen").style.display="none";
-
-    resetGame();
-
-    running=true;
-
-    clearInterval(gameLoop);
-    gameLoop=setInterval(update, speed);
-}
-
-function restartGame(){
-    startGame();
-}
-
-function setDirection(x,y){
-
-    if(x === -dir.x && y === -dir.y) return;
-
-    nextDir={x,y};
-}
-
-// 鍵盤 WASD（電腦用）
-document.addEventListener("keydown",(e)=>{
-    if(e.key==="w") setDirection(0,-1);
-    if(e.key==="s") setDirection(0,1);
-    if(e.key==="a") setDirection(-1,0);
-    if(e.key==="d") setDirection(1,0);
+window.addEventListener("resize", () => {
+    resizeCanvas();
+    if (!running) draw();
 });
 
-// 滑行控制（手機用）
-let _tx=0, _ty=0;
-const _wrap = document.getElementById("gameWrapper");
+// ── 安全格子（不與蛇、障礙、食物重疊）─────────────
+function safeCell() {
+    const occupied = new Set();
+    if (snake)     snake.forEach(s     => occupied.add(`${s.x},${s.y}`));
+    if (obstacles) obstacles.forEach(o => occupied.add(`${o.x},${o.y}`));
+    if (food)      occupied.add(`${food.x},${food.y}`);
+    if (boostFood) occupied.add(`${boostFood.x},${boostFood.y}`);
 
-_wrap.addEventListener("touchstart",(e)=>{
-    _tx = e.touches[0].clientX;
-    _ty = e.touches[0].clientY;
-},{passive:true});
-
-_wrap.addEventListener("touchend",(e)=>{
-    const dx = e.changedTouches[0].clientX - _tx;
-    const dy = e.changedTouches[0].clientY - _ty;
-    if(Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
-    if(Math.abs(dx) > Math.abs(dy)){
-        setDirection(dx > 0 ? 1 : -1, 0);
-    } else {
-        setDirection(0, dy > 0 ? 1 : -1);
-    }
-},{passive:true});
-
-function endGame(win=false){
-
-    running=false;
-    clearInterval(gameLoop);
-
-    if(score>best){
-        best=score;
-        localStorage.setItem("snake_best", best);
-        bestEl.textContent=best;
-    }
-
-    document.getElementById("endScreen").style.display="flex";
-
-    if(win){
-        document.getElementById("endTitle").textContent="YOU WIN!";
-        document.getElementById("endText").textContent=
-            "你成功成為像素蛇王！";
-    }else{
-        document.getElementById("endTitle").textContent="GAME OVER";
-        document.getElementById("endText").textContent=
-            "你的分數：" + score;
-    }
+    let c, tries = 0;
+    do {
+        c = {
+            x: Math.floor(Math.random() * COLS),
+            y: Math.floor(Math.random() * ROWS)
+        };
+        if (++tries > 500) break; // 安全閥（棋盤幾乎全滿時）
+    } while (occupied.has(`${c.x},${c.y}`));
+    return c;
 }
 
-function update(){
+// ── 初始化 ────────────────────────────────────────
+function resetGame() {
+    snake = [
+        {x:10, y:10},
+        {x: 9, y:10},
+        {x: 8, y:10}
+    ];
+    dir = nextDir = {x:1, y:0};
+    score = 0;
+    speed = 150;
+    scoreEl.textContent = 0;
 
+    // 先建障礙，再放食物（safeCell 會避開已有物件）
+    obstacles = [];
+    for (let i = 0; i < 6; i++) obstacles.push(safeCell());
+
+    food      = safeCell();
+    boostFood = safeCell();
+}
+
+// ── 開始 / 重新開始 ───────────────────────────────
+function startGame() {
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("endScreen").style.display   = "none";
+    resizeCanvas();
+    resetGame();
+    running = true;
+    clearInterval(gameLoop);
+    gameLoop = setInterval(update, speed);
+}
+function restartGame() { startGame(); }
+
+// ── 方向控制 ─────────────────────────────────────
+function setDirection(x, y) {
+    if (x === -dir.x && y === -dir.y) return;
+    nextDir = {x, y};
+}
+
+// 鍵盤 WASD
+document.addEventListener("keydown", e => {
+    if (e.key === "w") setDirection( 0, -1);
+    if (e.key === "s") setDirection( 0,  1);
+    if (e.key === "a") setDirection(-1,  0);
+    if (e.key === "d") setDirection( 1,  0);
+});
+
+// 滑行手勢
+let _tx = 0, _ty = 0;
+const _wrap = document.getElementById("gameWrapper");
+_wrap.addEventListener("touchstart", e => {
+    _tx = e.touches[0].clientX;
+    _ty = e.touches[0].clientY;
+}, {passive: true});
+_wrap.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - _tx;
+    const dy = e.changedTouches[0].clientY - _ty;
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+    if (Math.abs(dx) > Math.abs(dy)) setDirection(dx > 0 ? 1 : -1, 0);
+    else                              setDirection(0, dy > 0 ? 1 : -1);
+}, {passive: true});
+
+// ── 遊戲結束 ─────────────────────────────────────
+function endGame(win = false) {
+    running = false;
+    clearInterval(gameLoop);
+    if (score > best) {
+        best = score;
+        localStorage.setItem("snake_best", best);
+        bestEl.textContent = best;
+    }
+    const endScreen = document.getElementById("endScreen");
+    endScreen.style.display = "flex";
+    document.getElementById("endTitle").textContent = win ? "YOU WIN!" : "GAME OVER";
+    document.getElementById("endText").textContent  = win
+        ? "你成功成為像素蛇王！"
+        : "你的分數：" + score;
+}
+
+// ── 更新 ─────────────────────────────────────────
+function update() {
     dir = nextDir;
+    const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
 
-    const head = {
-        x: snake[0].x + dir.x,
-        y: snake[0].y + dir.y
-    };
-
-    // 撞牆
-    if(
-        head.x < 0 ||
-        head.y < 0 ||
-        head.x >= tile ||
-        head.y >= 28
-    ){
-        endGame();
-        return;
-    }
-
-    // 撞自己
-    for(let s of snake){
-        if(s.x===head.x && s.y===head.y){
-            endGame();
-            return;
-        }
-    }
-
-    // 撞障礙
-    for(let o of obstacles){
-        if(o.x===head.x && o.y===head.y){
-            endGame();
-            return;
-        }
-    }
+    if (head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS) { endGame(); return; }
+    if (snake.some(s => s.x === head.x && s.y === head.y))             { endGame(); return; }
+    if (obstacles.some(o => o.x === head.x && o.y === head.y))         { endGame(); return; }
 
     snake.unshift(head);
 
-    // 普通果實
-    if(head.x===food.x && head.y===food.y){
-
+    if (head.x === food.x && head.y === food.y) {
         score++;
-        scoreEl.textContent=score;
-        createFood();
-
+        scoreEl.textContent = score;
+        food = safeCell();
         canvas.classList.add("flash");
-        setTimeout(()=>canvas.classList.remove("flash"),120);
-
-        // 微加速
-        if(speed>70){
-            speed-=4;
+        setTimeout(() => canvas.classList.remove("flash"), 120);
+        if (speed > 70) {
+            speed -= 4;
             clearInterval(gameLoop);
-            gameLoop=setInterval(update, speed);
+            gameLoop = setInterval(update, speed);
         }
-
-    }else if(head.x===boostFood.x && head.y===boostFood.y){
-
-        score+=3;
-        scoreEl.textContent=score;
-
-        createBoostFood();
-
-        speed=Math.max(50,speed-10);
-
+    } else if (head.x === boostFood.x && head.y === boostFood.y) {
+        score += 3;
+        scoreEl.textContent = score;
+        boostFood = safeCell();
+        speed = Math.max(50, speed - 10);
         clearInterval(gameLoop);
-        gameLoop=setInterval(update, speed);
-
-    }else{
+        gameLoop = setInterval(update, speed);
+    } else {
         snake.pop();
     }
 
-    // 勝利
-    if(snake.length >= 22){
-        endGame(true);
-        return;
-    }
-
+    if (snake.length >= 22) { endGame(true); return; }
     draw();
 }
 
-function draw(){
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+// ── 繪製 ─────────────────────────────────────────
+function draw() {
+    if (!canvas.width) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 障礙
-    for(let o of obstacles){
-
-        ctx.fillStyle="#ff3366";
-        ctx.fillRect(
-            o.x*grid+2,
-            o.y*grid+2,
-            grid-4,
-            grid-4
-        );
-    }
+    ctx.fillStyle = "#ff3366";
+    obstacles.forEach(o => ctx.fillRect(o.x*CELL+2, o.y*CELL+2, CELL-4, CELL-4));
 
     // 普通果實
-    ctx.fillStyle="#00ffd5";
-    ctx.fillRect(
-        food.x*grid+4,
-        food.y*grid+4,
-        grid-8,
-        grid-8
-    );
+    ctx.fillStyle = "#00ffd5";
+    ctx.fillRect(food.x*CELL+4, food.y*CELL+4, CELL-8, CELL-8);
 
     // 特殊果實
-    ctx.fillStyle="#ffe600";
-    ctx.fillRect(
-        boostFood.x*grid+3,
-        boostFood.y*grid+3,
-        grid-6,
-        grid-6
-    );
+    ctx.fillStyle = "#ffe600";
+    ctx.fillRect(boostFood.x*CELL+3, boostFood.y*CELL+3, CELL-6, CELL-6);
 
-    // 蛇
-    snake.forEach((s,i)=>{
-
-        if(i===0){
-            ctx.fillStyle="#ffffff";
-        }else{
-            ctx.fillStyle="#00aaff";
-        }
-
-        ctx.fillRect(
-            s.x*grid+2,
-            s.y*grid+2,
-            grid-4,
-            grid-4
-        );
-
-        // 像素發光
-        ctx.shadowColor="#00ffd5";
-        ctx.shadowBlur=10;
+    // 蛇（先設 shadowColor，迴圈內直接畫）
+    ctx.shadowColor = "#00ffd5";
+    ctx.shadowBlur  = 8;
+    snake.forEach((s, i) => {
+        ctx.fillStyle = i === 0 ? "#ffffff" : "#00aaff";
+        ctx.fillRect(s.x*CELL+2, s.y*CELL+2, CELL-4, CELL-4);
     });
-
-    ctx.shadowBlur=0;
+    ctx.shadowBlur = 0;
 }
 
-draw();
+// 首次載入時先算一次大小，畫出空棋盤
+resizeCanvas();
 </script>
 
 </body>
