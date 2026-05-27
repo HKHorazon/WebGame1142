@@ -58,16 +58,12 @@ body {
 
 canvas {
     display: block;
-    /* scale down to fit whatever space is left after topUI */
-    max-width: 100%;
-    max-height: 100%;
     image-rendering: pixelated;
     background:
         linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
         #0d0d18;
     background-size: 24px 24px;
-    border: 1px solid #00ffd533;
 }
 
 .overlay {
@@ -158,10 +154,10 @@ const ctx     = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const bestEl  = document.getElementById("best");
 
-// ── 格子常數 ──────────────────────────────────────
-const COLS = 20;
-const ROWS = 28;
-let   CELL = 24;   // 由 resizeCanvas() 動態算出
+// ── 格子常數（resizeCanvas 會動態更新）────────────
+let COLS = 20;
+let ROWS = 28;
+let CELL = 24;
 
 // ── 遊戲狀態 ─────────────────────────────────────
 let snake, dir, nextDir;
@@ -172,21 +168,21 @@ let running = false;
 let best = Number(localStorage.getItem("snake_best") || 0);
 bestEl.textContent = best;
 
-// ── Canvas 自適應 ────────────────────────────────
+// ── Canvas 自適應（滿版）────────────────────────
 function resizeCanvas() {
-    const wrap = document.getElementById("canvasWrap");
+    const wrap   = document.getElementById("canvasWrap");
     const availW = wrap.clientWidth;
     const availH = wrap.clientHeight;
 
-    // 選最大整數格子大小，讓棋盤完整放入可用空間
-    const cellByW = Math.floor(availW / COLS);
-    const cellByH = Math.floor(availH / ROWS);
-    CELL = Math.max(12, Math.min(cellByW, cellByH)); // 最小 12px 以防太小
+    // 以寬度決定格子大小（固定 20 欄）
+    CELL = Math.max(14, Math.floor(availW / 20));
 
-    canvas.width  = CELL * COLS;
-    canvas.height = CELL * ROWS;
+    // 欄數、列數完整填滿可用空間
+    COLS = Math.floor(availW / CELL);
+    ROWS = Math.floor(availH / CELL);
 
-    // 同步 CSS 背景格線大小
+    canvas.width  = COLS * CELL;
+    canvas.height = ROWS * CELL;
     canvas.style.backgroundSize = `${CELL}px ${CELL}px`;
 }
 
@@ -216,10 +212,12 @@ function safeCell() {
 
 // ── 初始化 ────────────────────────────────────────
 function resetGame() {
+    const sx = Math.floor(COLS / 2);
+    const sy = Math.floor(ROWS / 2);
     snake = [
-        {x:10, y:10},
-        {x: 9, y:10},
-        {x: 8, y:10}
+        {x: sx,   y: sy},
+        {x: sx-1, y: sy},
+        {x: sx-2, y: sy}
     ];
     dir = nextDir = {x:1, y:0};
     score = 0;
