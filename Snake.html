@@ -55,43 +55,6 @@ canvas{
     text-shadow:0 0 8px #00ffd5;
 }
 
-#controls{
-    position:absolute;
-    bottom:18px;
-    width:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.dpad{
-    position:relative;
-    width:220px;
-    height:220px;
-}
-
-.btn{
-    position:absolute;
-    width:70px;
-    height:70px;
-    border:none;
-    border-radius:18px;
-    background:#1b1b2f;
-    color:white;
-    font-size:28px;
-    box-shadow:
-        0 0 10px #00ffd5,
-        inset 0 0 12px rgba(0,255,213,0.4);
-}
-
-.btn:active{
-    transform:scale(0.92);
-}
-
-#up{ left:75px; top:0; }
-#down{ left:75px; bottom:0; }
-#left{ left:0; top:75px; }
-#right{ right:0; top:75px; }
 
 .overlay{
     position:absolute;
@@ -151,20 +114,11 @@ canvas{
 
     <canvas id="game" width="480" height="720"></canvas>
 
-    <div id="controls">
-        <div class="dpad">
-            <button class="btn" id="up">▲</button>
-            <button class="btn" id="down">▼</button>
-            <button class="btn" id="left">◀</button>
-            <button class="btn" id="right">▶</button>
-        </div>
-    </div>
-
     <div class="overlay" id="startScreen">
         <h1>PIXEL SNAKE</h1>
         <p>
-            手機：按方向鍵操作<br>
-            電腦：WASD / 方向鍵<br><br>
+            手機：在畫面上滑動來控制<br>
+            電腦：WASD 鍵<br><br>
             吃果實變長<br>
             撞牆、撞自己、撞障礙物會失敗<br><br>
             長度達到 22 即勝利！
@@ -272,19 +226,33 @@ function setDirection(x,y){
     nextDir={x,y};
 }
 
+// 鍵盤 WASD（電腦用）
 document.addEventListener("keydown",(e)=>{
-
-    if(e.key==="ArrowUp" || e.key==="w") setDirection(0,-1);
-    if(e.key==="ArrowDown" || e.key==="s") setDirection(0,1);
-    if(e.key==="ArrowLeft" || e.key==="a") setDirection(-1,0);
-    if(e.key==="ArrowRight" || e.key==="d") setDirection(1,0);
-
+    if(e.key==="w") setDirection(0,-1);
+    if(e.key==="s") setDirection(0,1);
+    if(e.key==="a") setDirection(-1,0);
+    if(e.key==="d") setDirection(1,0);
 });
 
-document.getElementById("up").ontouchstart=()=>setDirection(0,-1);
-document.getElementById("down").ontouchstart=()=>setDirection(0,1);
-document.getElementById("left").ontouchstart=()=>setDirection(-1,0);
-document.getElementById("right").ontouchstart=()=>setDirection(1,0);
+// 滑行控制（手機用）
+let _tx=0, _ty=0;
+const _wrap = document.getElementById("gameWrapper");
+
+_wrap.addEventListener("touchstart",(e)=>{
+    _tx = e.touches[0].clientX;
+    _ty = e.touches[0].clientY;
+},{passive:true});
+
+_wrap.addEventListener("touchend",(e)=>{
+    const dx = e.changedTouches[0].clientX - _tx;
+    const dy = e.changedTouches[0].clientY - _ty;
+    if(Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+    if(Math.abs(dx) > Math.abs(dy)){
+        setDirection(dx > 0 ? 1 : -1, 0);
+    } else {
+        setDirection(0, dy > 0 ? 1 : -1);
+    }
+},{passive:true});
 
 function endGame(win=false){
 
