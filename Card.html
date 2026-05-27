@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>記憶翻牌 - 手繪風</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Arial", sans-serif;
+    background: #f6f1e7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    touch-action: manipulation;
+}
+
+/* 手繪紙感背景 */
+body::before {
+    content: "";
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(#00000010 1px, transparent 1px);
+    background-size: 6px 6px;
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* 標題 */
+h1 {
+    margin: 10px;
+    font-size: 22px;
+    color: #333;
+}
+
+/* 狀態列 */
+#info {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    max-width: 420px;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+/* 遊戲盤 */
+#game {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 90%;
+    max-width: 420px;
+}
+
+/* 卡片 */
+.card {
+    aspect-ratio: 1/1;
+    background: #fffdf7;
+    border: 2px solid #333;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s;
+    box-shadow: 2px 2px 0 #00000030;
+}
+
+.card:active {
+    transform: scale(0.95);
+}
+
+/* 翻開效果 */
+.card.flipped {
+    background: #fff;
+}
+
+/* 配對成功 */
+.card.matched {
+    background: #d7f7d0;
+    border-color: #2d7a2d;
+}
+
+/* 遮罩 */
+#overlay {
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background: rgba(0,0,0,0.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    color:white;
+    font-size:24px;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px 16px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🧠 記憶翻牌</h1>
+
+<div id="info">
+    <div>時間：<span id="time">90</span>s</div>
+    <div>步數：<span id="steps">0</span></div>
+</div>
+
+<div id="game"></div>
+
+<div id="overlay">
+    <div id="resultText"></div>
+    <button onclick="restart()">重新開始</button>
+</div>
+
+<script>
+const emojis = ["🍎","🍌","🍇","🍉","🍒","🍋","🍓","🍍"];
+let cards = [];
+let first = null;
+let lock = false;
+let steps = 0;
+let time = 90;
+let timer;
+let matchedCount = 0;
+
+const game = document.getElementById("game");
+const timeEl = document.getElementById("time");
+const stepsEl = document.getElementById("steps");
+const overlay = document.getElementById("overlay");
+const resultText = document.getElementById("resultText");
+
+function init() {
+    cards = [...emojis, ...emojis]
+        .sort(() => Math.random() - 0.5)
+        .map((e, i) => ({ id: i, value: e, matched: false }));
+
+    game.innerHTML = "";
+    steps = 0;
+    time = 90;
+    matchedCount = 0;
+    first = null;
+    lock = false;
+
+    stepsEl.textContent = steps;
+    timeEl.textContent = time;
+    overlay.style.display = "none";
+
+    cards.forEach((c, i) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.dataset.index = i;
+        div.innerText = "";
+        div.onclick = () => flip(i, div);
+        game.appendChild(div);
+    });
+
+    clearInterval(timer);
+    timer = setInterval(() => {
+        time--;
+        timeEl.textContent = time;
+        if (time <= 0) lose();
+    }, 1000);
+}
+
+function flip(i, el) {
+    if (lock) return;
+    const card = cards[i];
+    if (card.matched) return;
+    if (el.classList.contains("flipped")) return;
+
+    el.classList.add("flipped");
+    el.innerText = card.value;
+
+    if (!first) {
+        first = { i, el };
+        return;
+    }
+
+    steps++;
+    stepsEl.textContent = steps;
+
+    const second = { i, el };
+
+    if (cards[first.i].value === cards[second.i].value) {
+        cards[first.i].matched = true;
+        cards[second.i].matched = true;
+
+        first.el.classList.add("matched");
+        second.el.classList.add("matched");
+
+        matchedCount++;
+
+        first = null;
+
+        if (matchedCount === emojis.length) win();
+    } else {
+        lock = true;
+        setTimeout(() => {
+            first.el.classList.remove("flipped");
+            second.el.classList.remove("flipped");
+            first.el.innerText = "";
+            second.el.innerText = "";
+            first = null;
+            lock = false;
+        }, 700);
+    }
+}
+
+/* 鍵盤控制：用方向鍵移動 + Enter翻牌 */
+let focusIndex = 0;
+
+document.addEventListener("keydown", (e) => {
+    const cols = 4;
+    const rows = 4;
+
+    if (e.key === "ArrowRight") focusIndex = (focusIndex + 1) % 16;
+    if (e.key === "ArrowLeft") focusIndex = (focusIndex + 15) % 16;
+    if (e.key === "ArrowDown") focusIndex = (focusIndex + 4) % 16;
+    if (e.key === "ArrowUp") focusIndex = (focusIndex + 12) % 16;
+
+    if (e.key === "Enter") {
+        const el = game.children[focusIndex];
+        flip(focusIndex, el);
+    }
+
+    highlight();
+});
+
+function highlight() {
+    [...game.children].forEach((c, i) => {
+        c.style.outline = i === focusIndex ? "2px dashed #333" : "none";
+    });
+}
+
+/* 勝敗 */
+function win() {
+    clearInterval(timer);
+    resultText.innerText = "🎉 勝利！";
+    overlay.style.display = "flex";
+}
+
+function lose() {
+    clearInterval(timer);
+    resultText.innerText = "💀 時間到！失敗";
+    overlay.style.display = "flex";
+}
+
+function restart() {
+    init();
+}
+
+init();
+highlight();
+</script>
+
+</body>
+</html>
